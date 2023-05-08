@@ -5,7 +5,7 @@ import os as os
 import math as math
 import random as random
 import time as time
-grid = 5  # needs +2 to
+grid = 11  # 6 actually means like 5 by 5
 # y first x second
 map = [["O" for i in range(grid)] for j in range(grid)]
 
@@ -15,8 +15,8 @@ def clear():
 
 
 class agent():
-    def __init__(self, type, location, color, handle):
-        self.type = type
+    def __init__(self, name, location, color, handle):
+        self.name = name
         self.location = location
         self.color = color
         self.handle = handle
@@ -81,25 +81,30 @@ x = np.linspace(0, grid - 1)  # these two set up arrays full of just 1 - 4
 y = np.linspace(0, grid - 1)
 fig = plt.figure()  # figure variable for the animation
 ax = plt.axes()  # axes variable
-plt.xlim(0, 4)  # sets the limits of the x axis, that way blocks are right
-plt.ylim(0, 4)
+# sets the limits of the x axis, that way blocks are right
+plt.xlim(0, grid - 1)
+plt.ylim(0, grid - 1)
 ax.set_yticklabels([])
 ax.set_xticklabels([])  # these get rid of the numbers on the axes
 # plt.axis('off')
 
-plt.xticks(np.arange(0, 5, 1))
-plt.yticks(np.arange(0, 5, 1))  # these set the lines to be only 1 step
+plt.xticks(np.arange(0, grid, 1))
+plt.yticks(np.arange(0, grid, 1))  # these set the lines to be only 1 step
 plt.grid(True)  # grido
 
 ant = agent("ant", [0.5, 0.5], "red", plt.scatter(
     0.5, 0.5, color="red"))  # declaration of agents
 # will need to think of a less clunky way of doing this
-rat = agent("rat", [3.5, 3.5], "blue", plt.scatter(
-    3.5, 3.5, color="blue"))
+rat = agent("rat", [grid - 1.5, grid - 1.5], "blue", plt.scatter(
+    grid - 1.5, grid - 1.5, color="blue"))
+cat = agent("cat", [grid - 1.5, 0.5], "green", plt.scatter(
+    grid - 1.5, 0.5, color="green"))
+bat = agent("bat", [0.5, grid - 1.5], "orange", plt.scatter(
+    0.5, grid - 1.5, color="orange"))
 
-agents = [ant, rat]
+agents = [ant, rat, cat, bat]
 
-ani = animation.FuncAnimation(fig, mapUpdate, interval=1000)
+ani = animation.FuncAnimation(fig, mapUpdate, interval=100)
 plt.show()
 print("let me out")
 # while (True):
