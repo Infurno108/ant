@@ -1,33 +1,56 @@
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import numpy as np
 import os as os
 import math as math
 import random as random
 import time as time
-grid = 5
+grid = 5  # needs +2 to
 # y first x second
+map = [["O" for i in range(grid)] for j in range(grid)]
 
 
 def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
 
+
 class agent():
-    def __init__(self, type, location):
+    def __init__(self, type, location, color, handle):
         self.type = type
         self.location = location
+        self.color = color
+        self.handle = handle
 
     def move(self):
-        x = random.randint(-1, 1)
-        y = random.randint(-1, 1)
-        self.location = [max(min(self.location[0] + y, grid), 0),
-                         max(min(self.location[1] + x, grid), 0)]
+        # 0 = up, 1 = right, 2 = down, 3 = left
+        direction = random.randint(0, 3)
+        if direction == 0:
+            if self.location[0] == 0.5:
+                self.location[0] = grid - 1.5
+            else:
+                self.location[0] -= 1
+        elif direction == 1:
+            if self.location[1] == grid - 1.5:
+                self.location[1] = 0.5
+            else:
+                self.location[1] += 1
+        elif direction == 2:
+            if self.location[0] == grid - 1.5:
+                self.location[0] = 0.5
+            else:
+                self.location[0] += 1
+        elif direction == 3:
+            if self.location[1] == 0.5:
+                self.location[1] = grid - 1.5
+            else:
+                self.location[1] -= 1
 
 
-def agentPrint():
-    rows, cols = (grid, grid)
-    map = [["O"]*rows]*cols
+def mapUpdate():
+    global map
+    map = [["O" for i in range(grid)] for j in range(grid)]
     for i in range(0, len(agents)):
-        map[agents[i].location[0]][agents[i].location[1]] = "X"
-    for row in map:
-        print(row)
+        map[agents[i].location[0]][agents[i].location[1]] = agents[i].image
 
 
 def agentMove():
@@ -35,12 +58,54 @@ def agentMove():
         agents[i].move()
 
 
-ant = agent("ant", [0, 0])
+def mapPrint():
+    for row in map:
+        print(row)
+        print()
 
-agents = [ant]
 
-while (True):
-    agentPrint()
+def mapUpdate(fig):
+    # fig.clear()
+    global antHandle
+    global ratHandle
     agentMove()
-    print()
-    time.sleep(1)
+    # for agent in agents:
+    for agent in agents:
+        agent.handle.remove()
+        agent.handle = plt.scatter(
+            agent.location[0], agent.location[1], color=agent.color)
+
+
+# Setting up the grid that the agents will move on
+x = np.linspace(0, grid - 1)  # these two set up arrays full of just 1 - 4
+y = np.linspace(0, grid - 1)
+fig = plt.figure()  # figure variable for the animation
+ax = plt.axes()  # axes variable
+plt.xlim(0, 4)  # sets the limits of the x axis, that way blocks are right
+plt.ylim(0, 4)
+ax.set_yticklabels([])
+ax.set_xticklabels([])  # these get rid of the numbers on the axes
+# plt.axis('off')
+
+plt.xticks(np.arange(0, 5, 1))
+plt.yticks(np.arange(0, 5, 1))  # these set the lines to be only 1 step
+plt.grid(True)  # grido
+
+ant = agent("ant", [0.5, 0.5], "red", plt.scatter(
+    0.5, 0.5, color="red"))  # declaration of agents
+# will need to think of a less clunky way of doing this
+rat = agent("rat", [3.5, 3.5], "blue", plt.scatter(
+    3.5, 3.5, color="blue"))
+
+agents = [ant, rat]
+
+ani = animation.FuncAnimation(fig, mapUpdate, interval=1000)
+plt.show()
+print("let me out")
+# while (True):
+#    agentMove()
+#    mapUpdate()
+#    mapPrint()
+#    scatterUpdate()
+#    print()
+#    time.sleep(1)
