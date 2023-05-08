@@ -1,10 +1,13 @@
 import os as os
 import math as math
 import random as random
-x = 3
-y = 3
+import time as time
+grid = 5
 # y first x second
 
+
+def clear():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 class agent():
     def __init__(self, type, location):
@@ -14,28 +17,30 @@ class agent():
     def move(self):
         x = random.randint(-1, 1)
         y = random.randint(-1, 1)
-        self.location = [max(min(self.location[0] + y, 2), 0),
-                         max(min(self.location[1] + x, 2), 0)]
+        self.location = [max(min(self.location[0] + y, grid), 0),
+                         max(min(self.location[1] + x, grid), 0)]
 
 
 def agentPrint():
-    map = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    rows, cols = (grid, grid)
+    map = [["O"]*rows]*cols
     for i in range(0, len(agents)):
-        map[agents[i].location[0]][agents[i].location[1]] = 1
-    for i in range(0, len(map)):
-        print(map[i])
+        map[agents[i].location[0]][agents[i].location[1]] = "X"
+    for row in map:
+        print(row)
+
+
+def agentMove():
+    for i in range(0, len(agents)):
+        agents[i].move()
 
 
 ant = agent("ant", [0, 0])
 
 agents = [ant]
 
-agentPrint()
-
-ant.move()
-print()
-
-agentPrint()
-
 while (True):
-    mapPrint(map)
+    agentPrint()
+    agentMove()
+    print()
+    time.sleep(1)
