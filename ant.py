@@ -6,28 +6,36 @@ import math as math
 import random as random
 import time as time
 import copy as copy
-grid = 51  # 6 actually means like 5 by 5
+import sys as sys
+from matplotlib import style
+grid = 101  # 6 actually means like 5 by 5
 # y first x second
 map = [["0" for i in range(grid - 1)] for j in range(grid - 1)]
+antCount = 0
+leafCount = 0
+energy = 50
+reproduceCost = 30
+moveCost = 10
+leafCost = 5
 
+colors = ["red", "blue", "green", "yellow", "orange", "purple", "pink"]
 
 def clear():
     os.system('clear')
 
 
 class agent():
-    def __init__(self, name, location, color, handle, dna):
-        self.name = name
-        self.energy = 10
+    def __init__(self, location, color, handle, dna):
+        global energy
+        self.energy = 30
         self.location = location
         self.mapLocation = graphToMap(location)
-        self.oldSpot = location
         self.color = color
+        self.lives = 5
         self.handle = handle
-        self.children = []
+        self.leaves = []
         self.dna = dna
         self.rna = dna
-        self.childCount = 0
 
     def express(self):
         # This is going to need to decide between moving, reproducing, eating, constructing. Then call that method. For now lets just use random.
@@ -35,34 +43,13 @@ class agent():
         # 1 = up, 2 = right, 3 = down, 0 = left
         # M = move, R = reproduce, E = eat, C = construct
         # 1L 2M 3L 2M
-
         if (len(self.rna) == 0):
             self.rna = self.dna
         codon = self.rna[:2]  # first two elements of RNA
         self.rna = self.rna[2:]  # removes first two elements of RNA
         direction = int(codon[0])
-
         # print("Command: " + str(codon[1]) + " direction: " +
         #      str(direction) + " Location: " + str(self.location) + " Codon: " + str(codon))
-        if (codon[1] == "M"):
-            self.move(direction)
-        if (codon[1] == "L"):
-            self.construct(direction)
-        if (codon[1] == "R"):
-            self.reproduce(direction)
-
-    def reproduce(self, direction):
-        global agents
-        if (self.energy > 30):
-            self.energy = self.energy - 30
-            self.children.append(agent(self.name + "child" + str(self.childCount), self.location, self.color, plt.scatter(
-                self.location[0]-.5, self.location[1] - .5, color=self.color), self.dna))
-            self.childCount = self.childCount + 1
-            self.children[-1].move(direction)
-            agents.append(self.children[-1])
-
-    def construct(self, direction):
-        global leaf
         scout = copy.copy(self.location)
         if direction == 0:
             if self.location[0] == 1:
@@ -86,49 +73,66 @@ class agent():
                 scout[1] -= 1
         scoutTranslated = graphToMap(scout)
         if map[scoutTranslated[0]][scoutTranslated[1]] == "0":
-            leafLocal = scout
-            self.children.append(leaf(leafLocal, plt.scatter(
-                leafLocal[0]-.5, leafLocal[1] - .5, color="darkgreen"), self))
+            self.lives = 5
+            if (codon[1] == "M"):
+                self.move(scout)
+            if (codon[1] == "L"):
+                self.construct(scout)
+            if (codon[1] == "R"):
+                self.reproduce(scout)
+        else:
+            self.lives = self.lives - 1
 
-    def move(self, direction):
-        global map
+    def kill(self):
+        global agents, antCount
+        self.handle.remove()
+        map[self.mapLocation[0]][self.mapLocation[1]] = "0"
+        for leaf in self.leaves:
+            leaf.handle.remove()
+            map[leaf.mapLocation[0]][leaf.mapLocation[1]] = "0"
+        agents.remove(self)
+        antCount = antCount - 1
+
+    def reproduce(self, scout):
+        global antCount, reproduceCost, agents
+        if (self.energy > reproduceCost):  # self.energy > reproduceCost
+            mutation = mutate(self.dna)
+            color = self.color
+            antCount = antCount + 1
+            if (mutation != self.dna):
+                color = randomColor()
+            self.energy = self.energy - reproduceCost
+            agents.append(agent(scout, color, plt.scatter(
+                scout[0]-.5, scout[1] - .5, color=color), mutation))
+
+    def construct(self, scout):
+        global leaf, leafCost, leafCount
+        if (self.energy > leafCost):
+            leafCount = leafCount + 1
+            self.energy - leafCost
+            self.leaves.append(leaf(scout, plt.scatter(
+                scout[0]-.5, scout[1] - .5, color="darkgreen"), self))
+
+    def move(self, scout):
+        global map, moveCost
         # direction: 0 = left, 1 = up, 2 = right, 3 = down
-        self.energy = self.energy - .1
-        scout = copy.copy(self.location)
-        if direction == 0:
-            if self.location[0] == 1:
-                scout[0] = grid - 1
-            else:
-                scout[0] -= 1
-        elif direction == 1:
-            if self.location[1] == grid - 1:
-                scout[1] = 1
-            else:
-                scout[1] += 1
-        elif direction == 2:
-            if self.location[0] == grid - 1:
-                scout[0] = 1
-            else:
-                scout[0] += 1
-        elif direction == 3:
-            if self.location[1] == 1:
-                scout[1] = grid - 1
-            else:
-                scout[1] -= 1
-        scoutTranslated = graphToMap(scout)
-        if map[scoutTranslated[0]][scoutTranslated[1]] == "0":
+        if (self.energy > moveCost):
+            self.energy = self.energy - moveCost
             self.location = scout
-        
+
     def update(self):
         global map
-        self.handle.remove()
-        self.handle = plt.scatter(
-            self.location[0]-.5, self.location[1]-.5, color=self.color)
-        map[self.mapLocation[0]][self.mapLocation[1]] = "0"
-        self.mapLocation = graphToMap(self.location)
-        map[self.mapLocation[0]][self.mapLocation[1]] = "X"
-        for child in self.children:
-            child.update()
+        if (energy < 0 or self.lives < 0):
+            self.kill()
+        else:
+            self.handle.remove()
+            self.handle = plt.scatter(
+                self.location[0]-.5, self.location[1]-.5, color=self.color)
+            map[self.mapLocation[0]][self.mapLocation[1]] = "0"
+            self.mapLocation = graphToMap(self.location)
+            map[self.mapLocation[0]][self.mapLocation[1]] = "X"
+            for leaf in self.leaves:
+                leaf.update()
 
 
 class leaf():
@@ -141,10 +145,10 @@ class leaf():
 
     def update(self):
         global map
-        self.parent.energy = self.parent.energy + .1
+        self.parent.energy = self.parent.energy + 1
         map[self.mapLocation[0]][self.mapLocation[1]] = "L"
 
-    
+
 def mapPrint():
     for row in map:
         print(row)
@@ -161,6 +165,25 @@ def graphToMap(location):  # locaiton 0 is x 1 is y
     return [(grid - 1) - location[1], location[0] - 1]
 
 
+def randomCodon():
+    return str(random.randint(0, 3)) + random.choice(["M", "L", "R"])
+
+
+def randomDNA():
+    bap = random.randint(1, 21)
+    returnString = ""
+    for i in range(0, bap):
+        returnString = returnString + randomCodon()
+    return returnString
+
+
+def mutate(DNA):
+    if (random.randint(0, 5) == 0):  # sucesstest
+        codon = randomCodon()
+        DNA = DNA + codon
+    return DNA
+
+
 # Setting up the grid that the agents will move on
 x = np.linspace(0, grid - 1)  # these two set up arrays full of just 1 - 4
 y = np.linspace(0, grid - 1)
@@ -172,34 +195,41 @@ plt.ylim(0, grid - 1)
 ax.set_yticklabels([])
 ax.set_xticklabels([])  # these get rid of the numbers on the axes
 # plt.axis('off')
-
+plt.style.use('dark_background')
 plt.xticks(np.arange(0, grid, 1))
 plt.yticks(np.arange(0, grid, 1))  # these set the lines to be only 1 step
 plt.grid(True)  # grido
 
 shallow = 3
 deep = grid - 3
-
-ant = agent("ant", [shallow, shallow], "red", plt.scatter(
-    shallow - .5, shallow - .5, color="red"), "2M1L2M1M0R2M3M3M2M3L")  # declaration of agents 1L2M3L2M
+antDNA = randomDNA()
+ant = agent([shallow, shallow], "red", plt.scatter(
+    shallow - .5, shallow - .5, color="red"), antDNA)  # declaration of agents 1L2M3L2M
 
 # 2L1M3M2L
 # will need to think of a less clunky way of doing this
+ratDNA = randomDNA()
+rat = agent([deep, deep], "blue", plt.scatter(
+    deep - .5, deep - .5, color="blue"), ratDNA)
 
-# rat = agent("rat", [deep, deep], "blue", plt.scatter(
-#    deep - .5, deep - .5, color="blue"))
+catDNA = randomDNA()
+cat = agent([deep, shallow], "magenta", plt.scatter(
+    deep - .5, shallow - .5, color="magenta"), catDNA)
 
-# cat = agent("cat", [deep, shallow], "magenta", plt.scatter(
-#    deep - .5, shallow - .5, color="magenta"))
+batDNA = randomDNA()
+bat = agent([shallow, deep], "orange", plt.scatter(
+    shallow - .5, deep - .5, color="orange"), batDNA)
 
-# bat = agent("bat", [shallow, deep], "orange", plt.scatter(
-#    shallow - .5, deep - .5, color="orange"))
+print("Ant DNA: " + antDNA + "\nRat DNA: " + ratDNA +
+      "\nCat DNA: " + catDNA + "\nBat DNA: " + batDNA)
+print("Mutate Ant DNA: " + mutate(antDNA) + "\nMutate Rat DNA: " + mutate(ratDNA) +
+      "\nMutate Cat DNA: " + mutate(catDNA) + "\nMutate Bat DNA: " + mutate(batDNA))
 
 # map init, temp
 
-agents = [ant]
+agents = [ant, rat, cat, bat]
 
-ani = animation.FuncAnimation(fig, mapUpdate, interval=1)
+ani = animation.FuncAnimation(fig, mapUpdate, interval=100)
 
 plt.show()
 print("let me out")
