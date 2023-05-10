@@ -8,7 +8,7 @@ import time as time
 import copy as copy
 import sys as sys
 from matplotlib import style
-grid = 101  # 6 actually means like 5 by 5
+grid = 26  # 6 actually means like 5 by 5
 # y first x second
 map = [["0" for i in range(grid - 1)] for j in range(grid - 1)]
 antCount = 0
@@ -18,7 +18,6 @@ reproduceCost = 30
 moveCost = 10
 leafCost = 5
 
-colors = ["red", "blue", "green", "yellow", "orange", "purple", "pink"]
 
 def clear():
     os.system('clear')
@@ -43,13 +42,9 @@ class agent():
         # 1 = up, 2 = right, 3 = down, 0 = left
         # M = move, R = reproduce, E = eat, C = construct
         # 1L 2M 3L 2M
-        if (len(self.rna) == 0):
+        if (len(self.rna) < 2):
             self.rna = self.dna
-        codon = self.rna[:2]  # first two elements of RNA
-        self.rna = self.rna[2:]  # removes first two elements of RNA
-        direction = int(codon[0])
-        # print("Command: " + str(codon[1]) + " direction: " +
-        #      str(direction) + " Location: " + str(self.location) + " Codon: " + str(codon))
+        direction = int(self.rna[0])
         scout = copy.copy(self.location)
         if direction == 0:
             if self.location[0] == 1:
@@ -74,14 +69,15 @@ class agent():
         scoutTranslated = graphToMap(scout)
         if map[scoutTranslated[0]][scoutTranslated[1]] == "0":
             self.lives = 5
-            if (codon[1] == "M"):
+            if (self.rna[1] == "M"):
                 self.move(scout)
-            if (codon[1] == "L"):
+            if (self.rna[1] == "L"):
                 self.construct(scout)
-            if (codon[1] == "R"):
+            if (self.rna[1] == "R"):
                 self.reproduce(scout)
         else:
             self.lives = self.lives - 1
+        self.rna = self.rna[2:]
 
     def kill(self):
         global agents, antCount
@@ -96,14 +92,10 @@ class agent():
     def reproduce(self, scout):
         global antCount, reproduceCost, agents
         if (self.energy > reproduceCost):  # self.energy > reproduceCost
-            mutation = mutate(self.dna)
-            color = self.color
             antCount = antCount + 1
-            if (mutation != self.dna):
-                color = randomColor()
             self.energy = self.energy - reproduceCost
-            agents.append(agent(scout, color, plt.scatter(
-                scout[0]-.5, scout[1] - .5, color=color), mutation))
+            agents.append(agent(scout, self.color, plt.scatter(
+                scout[0]-.5, scout[1] - .5, color=self.color), mutate(self.dna)))
 
     def construct(self, scout):
         global leaf, leafCost, leafCount
@@ -152,6 +144,7 @@ class leaf():
 def mapPrint():
     for row in map:
         print(row)
+    print(antCount)
     print()
 
 
@@ -179,8 +172,20 @@ def randomDNA():
 
 def mutate(DNA):
     if (random.randint(0, 5) == 0):  # sucesstest
+        # checking for the type of mutation #remind friedrich that my AI told me the types of dna mutations
+        temp = random.randint(0, 3)
+        location = random.randint(0, len(DNA))  # location of the mutation
+        try:
+            int(DNA[location])
+        except:
+            location = location - 1
         codon = randomCodon()
-        DNA = DNA + codon
+        if (temp == 0):  # substitution
+            DNA = str(DNA[:location] + codon + DNA[location + 2:])
+        elif (temp == 1):  # insertion
+            DNA = str(DNA[:location] + codon + DNA[location:])
+        elif (temp == 2):  # deletion
+            DNA = str(DNA[:location] + DNA[location + 2:])
     return DNA
 
 
@@ -206,7 +211,6 @@ antDNA = randomDNA()
 ant = agent([shallow, shallow], "red", plt.scatter(
     shallow - .5, shallow - .5, color="red"), antDNA)  # declaration of agents 1L2M3L2M
 
-# 2L1M3M2L
 # will need to think of a less clunky way of doing this
 ratDNA = randomDNA()
 rat = agent([deep, deep], "blue", plt.scatter(
@@ -222,8 +226,6 @@ bat = agent([shallow, deep], "orange", plt.scatter(
 
 print("Ant DNA: " + antDNA + "\nRat DNA: " + ratDNA +
       "\nCat DNA: " + catDNA + "\nBat DNA: " + batDNA)
-print("Mutate Ant DNA: " + mutate(antDNA) + "\nMutate Rat DNA: " + mutate(ratDNA) +
-      "\nMutate Cat DNA: " + mutate(catDNA) + "\nMutate Bat DNA: " + mutate(batDNA))
 
 # map init, temp
 
