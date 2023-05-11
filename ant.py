@@ -8,15 +8,38 @@ import time as time
 import copy as copy
 import sys as sys
 from matplotlib import style
-grid = 26  # 6 actually means like 5 by 5
+grid = 101  # 6 actually means like 5 by 5
 # y first x second
 map = [["0" for i in range(grid - 1)] for j in range(grid - 1)]
 antCount = 0
 leafCount = 0
-energy = 50
+energy = 30
 reproduceCost = 30
-moveCost = 10
+moveCost = 20
 leafCost = 5
+
+red = ["lightsalmon", "salmon", "darksalmon", "lightcoral",
+       "indianred", "crimson", "firebrick", "darkred"]
+
+blue = ["lightsteelblue", "powderblue", "lightblue", "skyblue", "lightskyblue", "deepskyblue", "dodgerblue",
+        "cornflowerblue", "steelblue", "royalblue", "blue", "mediumblue", "darkblue", "navy", "midnightblue"]
+
+purple = ["lavender", "thistle", "plum", "violet", "orchid", "fuchsia", "magenta", "mediumorchid",
+          "mediumpurple", "blueviolet", "darkviolet", "darkorchid", "darkmagenta", "purple", "indigo"]
+
+brown = ["cornsilk", "blanchedalmond", "bisque", "navajowhite", "wheat", "burlywood", "tan", "rosybrown",
+         "sandybrown", "goldenrod", "darkgoldenrod", "peru", "chocolate", "saddlebrown", "sienna", "brown", "maroon"]
+
+
+def colorPicker(color):
+    if (color == "red"):
+        return red[random.randint(0, len(red) - 1)]
+    elif (color == "blue"):
+        return blue[random.randint(0, len(blue) - 1)]
+    elif (color == "purple"):
+        return purple[random.randint(0, len(purple) - 1)]
+    elif (color == "brown"):
+        return brown[random.randint(0, len(brown) - 1)]
 
 
 def clear():
@@ -24,12 +47,13 @@ def clear():
 
 
 class agent():
-    def __init__(self, location, color, handle, dna):
+    def __init__(self, location, color, handle, dna, root):
         global energy
         self.energy = 30
         self.location = location
         self.mapLocation = graphToMap(location)
         self.color = color
+        self.root = root
         self.lives = 5
         self.handle = handle
         self.leaves = []
@@ -93,9 +117,10 @@ class agent():
         global antCount, reproduceCost, agents
         if (self.energy > reproduceCost):  # self.energy > reproduceCost
             antCount = antCount + 1
+            mutation = mutate(self.dna, self.root)
             self.energy = self.energy - reproduceCost
-            agents.append(agent(scout, self.color, plt.scatter(
-                scout[0]-.5, scout[1] - .5, color=self.color), mutate(self.dna)))
+            agents.append(agent(scout, mutation[1], plt.scatter(
+                scout[0]-.5, scout[1] - .5, color=self.color), mutation[0], self.root))
 
     def construct(self, scout):
         global leaf, leafCost, leafCount
@@ -170,11 +195,11 @@ def randomDNA():
     return returnString
 
 
-def mutate(DNA):
-    if (random.randint(0, 5) == 0):  # sucesstest
+def mutate(DNA, color):
+    if (random.randint(0, 20) == 0):  # sucesstest
         # checking for the type of mutation #remind friedrich that my AI told me the types of dna mutations
         temp = random.randint(0, 3)
-        location = random.randint(0, len(DNA))  # location of the mutation
+        location = random.randint(0, len(DNA) - 1)  # location of the mutation
         try:
             int(DNA[location])
         except:
@@ -186,7 +211,7 @@ def mutate(DNA):
             DNA = str(DNA[:location] + codon + DNA[location:])
         elif (temp == 2):  # deletion
             DNA = str(DNA[:location] + DNA[location + 2:])
-    return DNA
+    return [DNA, colorPicker(color)]
 
 
 # Setting up the grid that the agents will move on
@@ -207,29 +232,45 @@ plt.grid(True)  # grido
 
 shallow = 3
 deep = grid - 3
+half = int((grid - 1) / 2)
 antDNA = randomDNA()
 ant = agent([shallow, shallow], "red", plt.scatter(
-    shallow - .5, shallow - .5, color="red"), antDNA)  # declaration of agents 1L2M3L2M
+    shallow - .5, shallow - .5, color="red"), antDNA, "red")  # declaration of agents 1L2M3L2M
 
 # will need to think of a less clunky way of doing this
 ratDNA = randomDNA()
 rat = agent([deep, deep], "blue", plt.scatter(
-    deep - .5, deep - .5, color="blue"), ratDNA)
+    deep - .5, deep - .5, color="blue"), ratDNA, "blue")
 
 catDNA = randomDNA()
 cat = agent([deep, shallow], "magenta", plt.scatter(
-    deep - .5, shallow - .5, color="magenta"), catDNA)
+    deep - .5, shallow - .5, color="magenta"), catDNA, "purple")
 
 batDNA = randomDNA()
 bat = agent([shallow, deep], "orange", plt.scatter(
-    shallow - .5, deep - .5, color="orange"), batDNA)
+    shallow - .5, deep - .5, color="orange"), batDNA, "brown")
+
+antTwoDNA = randomDNA()
+antTwo = agent([half, shallow], "red", plt.scatter(
+    half - .5, shallow - .5, color="red"), antTwoDNA, "red")
+ratTwoDNA = randomDNA()
+ratTwo = agent([half, deep], "blue", plt.scatter(
+    half - .5, deep - .5, color="blue"), ratTwoDNA, "blue")
+
+catTwoDNA = randomDNA()
+catTwo = agent([deep, half], "magenta", plt.scatter(
+    deep - .5, half - .5, color="magenta"), catTwoDNA, "purple")
+
+batTwoDNA = randomDNA()
+batTwo = agent([shallow, half], "orange", plt.scatter(
+    shallow - .5, half - .5, color="orange"), batTwoDNA, "brown")
 
 print("Ant DNA: " + antDNA + "\nRat DNA: " + ratDNA +
       "\nCat DNA: " + catDNA + "\nBat DNA: " + batDNA)
 
 # map init, temp
 
-agents = [ant, rat, cat, bat]
+agents = [ant, rat, cat, bat, antTwo, ratTwo, catTwo, batTwo]
 
 ani = animation.FuncAnimation(fig, mapUpdate, interval=100)
 
