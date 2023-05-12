@@ -13,10 +13,10 @@ grid = 101  # 6 actually means like 5 by 5
 map = [["0" for i in range(grid - 1)] for j in range(grid - 1)]
 antCount = 0
 leafCount = 0
-energy = 30
+energy = 50
 reproduceCost = 30
-moveCost = 20
-leafCost = 5
+moveCost = 0
+leafCost = 1
 
 red = ["lightsalmon", "salmon", "darksalmon", "lightcoral",
        "indianred", "crimson", "firebrick", "darkred"]
@@ -163,7 +163,8 @@ class leaf():
     def update(self):
         global map
         self.parent.energy = self.parent.energy + 1
-        map[self.mapLocation[0]][self.mapLocation[1]] = "L"
+        # if needed turn this into a char so you
+        map[self.mapLocation[0]][self.mapLocation[1]] = self
 
 
 def mapPrint():
@@ -272,7 +273,7 @@ print("Ant DNA: " + antDNA + "\nRat DNA: " + ratDNA +
 
 agents = [ant, rat, cat, bat, antTwo, ratTwo, catTwo, batTwo]
 
-ani = animation.FuncAnimation(fig, mapUpdate, interval=100)
+ani = animation.FuncAnimation(fig, mapUpdate, interval=1)
 
 plt.show()
 print("let me out")
